@@ -1,0 +1,7 @@
+select i.c_code as distributor_item_code, i.c_name as name, m.c_name as manufacturer, i.c_strength as strength, p.c_name as pack,COALESCE(ptm.c_name,i.c_pack_type_code) as pack_form,
+CAST(i.n_qty_per_box as varchar(100))qty_per_pack,  i.c_brand_name as brand, cast(null as varchar(1000)) as schedule, cast(null as varchar(1000)) as sku_code, i.c_hsn_sac_code as hsn_code,cast(null as numeric(10,3)) as mrp, GETDATE() as created_on, GETDATE() as updated_on, cast('TRUE' as boolean) as is_active,
+cast('False' as boolean)  as is_merged, cast(null as varchar(1000)) as molecular_content, cast(null as varchar(1000)) as med_type, cast(null as varchar(1000)) as med_category, cast(null as varchar(1000)) as med_head, cast(null as varchar(1000)) as med_class, cast(null as varchar(1000)) as med_profile_class, cast(null as varchar(1000)) as med_profile_desc, cast(i.distributor_id as numeric(11,0)) as fk_distributor_master_id
+from pharmassist.item_mst i left join pharmassist.pack_mst p on i.c_pack_code=p.c_code and i.distributor_id=p.distributor_id 
+left join pharmassist.mfac_mst m on i.c_mfac_code=m.c_code and i.distributor_id=m.distributor_id 
+left join pharmassist.pack_type_mst ptm on i.c_pack_type_code=ptm.c_code and i.distributor_id=ptm.distributor_id
+order by i.c_code, i.distributor_id;
