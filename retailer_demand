@@ -1,0 +1,22 @@
+SELECT drm.distributor_id, demand.n_branch,drm.distributor_retailer_code,CURRENT_DATE as last_updated_date,demand.last_inv_date,demand.sale_amt,demand.num_of_inv as last_inv_count, CURRENT_DATE as updated_on, CURRENT_DATE as created_on
+FROM mdm_master.distributor_retailer_master drm
+LEFT JOIN     
+       (
+       SELECT
+               n_distributor_id, NULL::NUMERIC as n_branch, c_dist_cust_code,
+              max(dt_time) as last_inv_date, ROUND(SUM(n_sale_amt),0)  as sale_amt, COUNT(DISTINCT n_inv_uno) as num_of_inv
+       from level1.sales
+       WHERE DATE(dt_time) >= DATE(CURRENT_DATE - 180)
+       and n_distributor_id in (2,6,5,19,20,41,42,52,64,70,71,73)
+       GROUP BY 1,2,3
+UNION  
+       SELECT
+              distributor_id as n_distributor_id, n_retail_outlet_id as n_branch,c_cust_code,
+              MAX(d_inv_date) as last_inv_date, SUM(n_prod_val) as sale_amt, COUNT(DISTINCT n_srno) as num_of_inv
+       from go_frugal.invoice_mst_load
+       WHERE DATE(d_inv_date) >= DATE(CURRENT_DATE - 180)
+       GROUP BY 1,2,3
+       )demand
+ON drm.distributor_id = demand.n_distributor_id and drm.distributor_retailer_code = demand.c_dist_cust_code
+where drm.distributor_id
+in (2,6,5,19,20,41,42,52,57,64,70,71,73); 
