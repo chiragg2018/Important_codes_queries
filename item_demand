@@ -1,0 +1,37 @@
+
+select t3.fk_distributor_master_id as distributor_id,t3.distributor_item_code,CURRENT_DATE as latest_update_date, t5.max_inv_date as last_invoice_date,t5.tot_sales,t7.n_balance_qty,CURRENT_DATE as updated_on,CURRENT_DATE as created_on
+from mdm_master.distributor_item_master  as t3
+left join (
+select COALESCE(t2.new_distributor_id, t1.erp_n_distributor_id) as distributor_id, COALESCE(t2.new_dist_item_code, t1.c_dist_item_code) as item_code,
+sum(t1.n_total_qty) as qty,SUM(n_ptr*n_qty) as tot_sales,max(date(dt_time) ) as max_inv_date
+from level1.sales as t1
+left join adhoc.pharmassist_to_easysol_code_change as t2
+on t1.n_distributor_id= t2.old_distributor_id and t1.c_dist_item_code=t2.old_dist_item_code
+where date(t1.dt_time) BETWEEN CURRENT_DATE-180 and current_date-1 
+--and COALESCE(t2.new_distributor_id, t1.n_distributor_id)=23 and COALESCE(t2.new_dist_item_code, t1.c_dist_item_code)='223484'
+GROUP by 1,2
+UNION ALL
+select distributor_id,c_item_code as item_code,SUM(n_qty+n_scheme_qty) as qty,SUM(n_qty*n_sale_rate) as tot_sales,max(DATE(d_inv_date)) from Go_frugal.invoice_det_load
+where c_inv_type='S'
+and date(d_inv_date) BETWEEN CURRENT_DATE-180 and current_date-1 
+group BY 1,2
+)as t5  
+on t5.distributor_id =t3.fk_distributor_master_id and t5.item_code=t3.distributor_item_code
+left join (
+select n_distributor_id,c_dist_item_code,ROUND(AVG(bal_qty),0) as n_balance_qty
+FROM
+(
+select erp_n_distributor_id as n_distributor_id,c_dist_item_code,d_date, SUM(n_balance_qty) as bal_qty 
+from level1.stock_day_end where d_date between CURRENT_DATE-31 and CURRENT_DATE-1
+GROUP by 1,2,3
+)a1
+GROUP by 1,2) as t7
+on t7.n_distributor_id=t3.fk_distributor_master_id and t7.c_dist_item_code=t3.distributor_item_code
+where t3.fk_distributor_master_id 
+--in (64)
+in (
+--2,6,5,19,20,23,41,42,52,57,64,66,70,71,73,166,157,126,
+2,6,5,52,57,70,71,19,20,64,73,126,157,166,189,190,196,197,200,201,203,199,204,206,207,208,209,210,211
+) 
+--in (57) 
+group by 1,2,4,5,6
