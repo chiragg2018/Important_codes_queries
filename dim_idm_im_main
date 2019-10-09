@@ -1,0 +1,30 @@
+select dd."name" as distributor_name
+, dd.old_distributor_master_id as fk_distributor_master_id
+,dim.distributor_item_code
+,'AH_' || dim.distributor_item_code as dist_item_code_v2
+,dim."name" as distributor_item_name
+,dim.pack as dist_item_pack
+,dim.strength as dist_item_strength
+,dim.pack_form as dist_packform
+,current_date as date
+,dim.created_on
+,dim.updated_on
+,dim.manufacturer as dist_mfac_name
+,idm.fk_item_master_uid as mdm_uid
+,p."name" as mdm_name
+,p.manufacturer_name as mdm_mfac_name
+,p.product_pack_name as mdm_pack_name
+,p.manufacturer_name as mdm_mfac_name
+, p.pack_form_name as mdm_packform
+, p.qty_per_box as mdm_qty_per_box
+from distributor_item_master dim
+left join item_distributor_mapping idm
+on dim.distributor_item_code=idm.distributor_item_code
+and dim.fk_distributor_branch_erp_id=idm.fk_distributor_branch_erp_id
+left join vw_product p
+on idm.fk_item_master_uid=p.mdm_uid
+left join dim_distributor_branch_erp dd
+on dim.fk_distributor_branch_erp_id=dd.id
+where dd.old_distributor_master_id =157
+--and dim."name" ilike '%xyzal%'
+--and dim."name" ilike 'alex%'
