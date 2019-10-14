@@ -1,0 +1,49 @@
+import pandas as pd
+import sheetioQuicks
+import sqlalchemy as db
+import psycopg2 as pg
+import psycopg2
+import psycopg2.extras
+from sshtunnel import SSHTunnelForwarder
+
+df=pd.read_csv('thea_top_ucodes.csv',index_col=None)
+# print(df)
+df = df.drop_duplicates()
+
+df = df.where((pd.notnull(df)), None)
+df['ucode']=((df['ucode'].str.split('AH_')).str.get(1))
+
+# df1=df[df['ucode']==None]
+# print(df)
+i=0
+n=10000
+list_df = [df[i:i + n] for i in range(0, df.shape[0], n)]
+for t in range(0, 100):
+    print(t)
+    df = list_df[t]
+    t = t + 1
+    # staging
+    server = SSHTunnelForwarder(
+        ('13.127.188.60', 22),
+        ssh_username="ec2-user",
+        ssh_private_key="mdm_new.pem",
+        remote_bind_address=('prod-mdm-new.cijfstakmq3t.ap-south-1.rds.amazonaws.com', 5432),
+        # this needs to be the port on the remote server
+    )
+    server.start()
+    db_connection_string = "host={} dbname={} user={} password={} port={}".format('localhost', "mdm", "jash_singhania",
+                                                                                  '3d617bfd', server.local_bind_port)
+    conn = psycopg2.connect(db_connection_string)
+
+    new_query = """
+                        INSERT INTO adhoc.thea_top_ucodes (city,rank,ucode,ascent_mfac,priority,one_month_sale) VALUES %s
+                """
+
+    d = list(zip(*[df[c].values.tolist() for c in df]))
+    cur = conn.cursor()
+    # print(new_query)
+    # print(d)
+    resp = psycopg2.extras.execute_values(cur, new_query, d)
+    conn.commit()
+    cur.close()
+    conn.close()
